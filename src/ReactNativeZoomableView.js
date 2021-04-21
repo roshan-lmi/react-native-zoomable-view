@@ -18,7 +18,7 @@ const initialState = {
 class ReactNativeZoomableView extends Component {
   constructor(props) {
     super(props);
-
+    this.wasDoubleTap = true;
     this.gestureHandlers = PanResponder.create({
       onStartShouldSetPanResponder: this._handleStartShouldSetPanResponder,
       onMoveShouldSetPanResponder: this._handleMoveShouldSetPanResponder,
@@ -363,7 +363,7 @@ class ReactNativeZoomableView extends Component {
         this.longPressTimeout = null;
       }
 
-      if (this.gestureType !== 'pinch') {
+      if (this.gestureType !== 'pinch' && (Math.abs(gestureState.dx) > 5 || Math.abs(gestureState.dy) > 5) ) {
         this.gestureType = 'shift';
       }
       this._handleMovement(e, gestureState);
@@ -457,7 +457,13 @@ class ReactNativeZoomableView extends Component {
       if (this.props.onShiftingBefore(e, gestureState, this._getZoomableViewEventObject())) {
         return false;
       }
-    }
+    }else if (!this.wasDoubleTap) {
+           this.singleTapTimeout = setTimeout(() => {
+              this._handleSingleTap(e, gestureState);
+            }, this.props.doubleTapDelay);
+          } else if (this.wasDoubleTap) {
+            this.wasDoubleTap = null;
+           }
 
     const changeStateObj = this._bindOffsetValuesToBorders({
       lastMovePinch: false,
@@ -492,6 +498,19 @@ class ReactNativeZoomableView extends Component {
     } else {
       this.lastPressHolder = now;
     }
+    clearTimeout(this.singleTapTimeout);
+  }
+
+    /**
+   * Handles the single tap event
+    *
+    * @param event
+    * @param gestureState
+    *
+    * @private
+    */
+   _handleSingleTap(e, gestureState) {
+    this.props.onSingleTap(e, gestureState);
   }
 
   /**
@@ -659,6 +678,7 @@ ReactNativeZoomableView.propTypes = {
   onPanResponderEnd: PropTypes.func,
   onPanResponderMove: PropTypes.func,
   onLongPress: PropTypes.func,
+  onSingleTap: PropTypes.func,
   longPressDuration: PropTypes.number
 };
 
