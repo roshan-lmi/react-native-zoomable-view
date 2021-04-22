@@ -214,6 +214,12 @@ class ReactNativeZoomableView extends Component {
       if (this.props.onShiftingEnd) {
         this.props.onShiftingEnd(e, gestureState, this._getZoomableViewEventObject());
       }
+    } else if (!this.wasDoubleTap) {
+      this.singleTapTimeout = setTimeout(() => {
+        this._handleSingleTap(e, gestureState);
+      }, this.props.doubleTapDelay);
+    } else if (this.wasDoubleTap) {
+      this.wasDoubleTap = null;
     }
 
     this.gestureType = null;
@@ -363,7 +369,7 @@ class ReactNativeZoomableView extends Component {
         this.longPressTimeout = null;
       }
 
-      if (this.gestureType !== 'pinch') {
+      if (this.gestureType !== 'pinch' && (Math.abs(gestureState.dx) > 5 || Math.abs(gestureState.dy) > 5) ) {
         this.gestureType = 'shift';
       }
       this._handleMovement(e, gestureState);
@@ -492,7 +498,9 @@ class ReactNativeZoomableView extends Component {
     } else {
       this.lastPressHolder = now;
     }
-  }
+
+    clearTimeout(this.singleTapTimeout);
+}
 
   /**
    * Handles the double tap event
@@ -527,8 +535,20 @@ class ReactNativeZoomableView extends Component {
       }));
     }
 
+    this.wasDoubleTap = true;
   }
 
+  /**
+    * Handles the single tap event
+    *
+    * @param event
+    * @param gestureState
+    *
+    * @private
+    */
+   _handleSingleTap(e, gestureState) {
+    this.props.onSingleTap(e, gestureState);
+  }
 
   /**
    * Returns the next zoom step based on current step and zoomStep property.
@@ -659,6 +679,7 @@ ReactNativeZoomableView.propTypes = {
   onPanResponderEnd: PropTypes.func,
   onPanResponderMove: PropTypes.func,
   onLongPress: PropTypes.func,
+  onSingleTap: PropTypes.func,
   longPressDuration: PropTypes.number
 };
 
